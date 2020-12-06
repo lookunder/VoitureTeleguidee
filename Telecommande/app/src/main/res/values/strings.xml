@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Télécommande</string>
+    <string name="droite">D</string>
+    <string name="gauche">G</string>
+    <string name="avance">H</string>
+    <string name="recule">B</string>
+</resources>
