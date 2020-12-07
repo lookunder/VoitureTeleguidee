@@ -3,23 +3,22 @@ package com.cstpierre.telecommande
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.MotionEvent
 import android.view.View
-import android.widget.ArrayAdapter
-import android.widget.Button
-import android.widget.ImageButton
-import android.widget.Spinner
+import android.widget.*
+import androidx.appcompat.app.AppCompatActivity
 import java.io.IOException
 import java.io.OutputStream
 import java.util.*
+
 
 class MainActivity : AppCompatActivity() {
     private val mBluetoothAdapter: BluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
     private lateinit var os: OutputStream
     private lateinit var socket: BluetoothSocket
     private var minuterie: Long = 0
+    private var btd: BluetoothDevice? = null
 
     enum class Commande {
         DROITE, GAUCHE, CENTRE, AVANCE, RECULE, ARRET, ETEINDRE
@@ -35,49 +34,57 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.recule).setOnTouchListener(boutonReculeListener)
         findViewById<ImageButton>(R.id.eteindre).setOnTouchListener(boutonEteindreListener)
 
+        var spinner = findViewById<Spinner>(R.id.connections)
+
         val bondedDevices = mBluetoothAdapter.bondedDevices
 
-        val jeep = bondedDevices.find { btd -> btd.name == "jeep" }
-
-        //findViewById<Spinner>(R.id.connections).set
-        //val connections: Spinner = findViewById(R.id.connections)
-        // Create an ArrayAdapter using the string array and a default spinner layout
-        //val adapter = ArrayAdapter.createFromResource(
-        //    this,
-        //    bondedDevices.map { btd -> btd.name },
-        //    android.R.layout.simple_spinner_item
-        //)
-        //val adapter = ArrayAdapter.createFromResource(this,)
-
+        val choices = bondedDevices.map { btd -> btd.name  }
+        val adapter: ArrayAdapter<CharSequence> = ArrayAdapter<CharSequence>(this, android.R.layout.simple_spinner_item, choices)
         // Specify the layout to use when the list of choices appears
-        //adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 
-        // Apply the adapter to the spinner
-        //connections.adapter = adapter
+        // Set the adapter to th spinner
+        spinner.setAdapter(adapter);
 
+        //spinner.adapter
 
-        socket = jeep!!.createInsecureRfcommSocketToServiceRecord( UUID.fromString("94f39d29-7d6d-437d-973b-fba39e49d4ee"))
-        BluetoothAdapter.getDefaultAdapter().cancelDiscovery()
+        spinner?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
+            override fun onNothingSelected(parent: AdapterView<*>?) {
 
-        while( !socket.isConnected ) {
-            try {
-                socket.connect()
-            } catch (ex: IOException) {
-                Thread.sleep(1_000)
+            }
+
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
+                btd = bondedDevices.find { btd -> btd.name == spinner.selectedItem }
+
+                socket = btd!!.createInsecureRfcommSocketToServiceRecord(UUID.fromString("94f39d29-7d6d-437d-973b-fba39e49d4ee"))
+                BluetoothAdapter.getDefaultAdapter().cancelDiscovery()
+
+                while( !socket.isConnected ) {
+                    try {
+                        socket.connect()
+                    } catch (ex: IOException) {
+                        Thread.sleep(1_000)
+                    }
+                }
+
+                os = socket.outputStream
             }
         }
-
-        os = socket.outputStream
     }
 
     override fun onDestroy() {
         super.onDestroy()
 
-        os.write(Commande.CENTRE.ordinal)
-        os.write(Commande.ARRET.ordinal)
-        os.flush()
-        os.close()
-        socket.close()
+        os?.write(Commande.CENTRE.ordinal)
+        os?.write(Commande.ARRET.ordinal)
+        os?.flush()
+        os?.close()
+        socket?.close()
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -110,8 +117,8 @@ class MainActivity : AppCompatActivity() {
 
     private val boutonAvanceListener = View.OnTouchListener { _, motionEvent ->
         when (motionEvent.action) {
-            MotionEvent.ACTION_DOWN -> os.write(Commande.AVANCE.ordinal)
-            MotionEvent.ACTION_UP -> os.write(Commande.ARRET.ordinal)
+            MotionEvent.ACTION_DOWN -> os?.write(Commande.AVANCE.ordinal)
+            MotionEvent.ACTION_UP -> os?.write(Commande.ARRET.ordinal)
             else -> {}
         }
         false
@@ -119,8 +126,8 @@ class MainActivity : AppCompatActivity() {
 
     private val boutonReculeListener = View.OnTouchListener { _, motionEvent ->
         when (motionEvent.action) {
-            MotionEvent.ACTION_DOWN -> os.write(Commande.RECULE.ordinal)
-            MotionEvent.ACTION_UP -> os.write(Commande.ARRET.ordinal)
+            MotionEvent.ACTION_DOWN -> os?.write(Commande.RECULE.ordinal)
+            MotionEvent.ACTION_UP -> os?.write(Commande.ARRET.ordinal)
             else -> {}
         }
         false
@@ -128,8 +135,8 @@ class MainActivity : AppCompatActivity() {
 
     private val boutonDroiteListener = View.OnTouchListener { _, motionEvent ->
         when (motionEvent.action) {
-            MotionEvent.ACTION_DOWN -> os.write(Commande.DROITE.ordinal)
-            MotionEvent.ACTION_UP -> os.write(Commande.CENTRE.ordinal)
+            MotionEvent.ACTION_DOWN -> os?.write(Commande.DROITE.ordinal)
+            MotionEvent.ACTION_UP -> os?.write(Commande.CENTRE.ordinal)
             else -> {}
         }
         false
@@ -137,8 +144,8 @@ class MainActivity : AppCompatActivity() {
 
     private val boutonGaucheListener = View.OnTouchListener { _, motionEvent ->
         when (motionEvent.action) {
-            MotionEvent.ACTION_DOWN -> os.write(Commande.GAUCHE.ordinal)
-            MotionEvent.ACTION_UP -> os.write(Commande.CENTRE.ordinal)
+            MotionEvent.ACTION_DOWN -> os?.write(Commande.GAUCHE.ordinal)
+            MotionEvent.ACTION_UP -> os?.write(Commande.CENTRE.ordinal)
             else -> {}
         }
         false
@@ -147,7 +154,9 @@ class MainActivity : AppCompatActivity() {
     private val boutonEteindreListener = View.OnTouchListener { _, motionEvent ->
         when (motionEvent.action) {
             MotionEvent.ACTION_DOWN -> minuterie = System.nanoTime()
-            MotionEvent.ACTION_UP -> if( System.nanoTime() - minuterie > 3_000_000_000) os.write(Commande.ETEINDRE.ordinal)
+            MotionEvent.ACTION_UP -> if (System.nanoTime() - minuterie > 3_000_000_000) os?.write(
+                Commande.ETEINDRE.ordinal
+            )
             else -> {}
         }
         false
