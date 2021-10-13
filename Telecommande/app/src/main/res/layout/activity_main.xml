@@ -10,12 +10,12 @@
         android:id="@+id/eteindre"
         android:layout_width="89dp"
         android:layout_height="74dp"
-        android:layout_marginStart="20dp"
         android:layout_marginEnd="20dp"
+        android:contentDescription="@string/boutton_pour_teindre_le_v_hicule"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/video"
         app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@android:drawable/ic_lock_power_off" />
+        app:srcCompat="@android:drawable/ic_lock_power_off"
+        tools:ignore="SpeakableTextPresentCheck" />
 
     <Button
         android:id="@+id/avance"
@@ -23,8 +23,10 @@
         android:layout_height="64dp"
         android:layout_marginStart="16dp"
         android:text="@string/avance"
+        android:textColor="#795548"
         app:layout_constraintBottom_toBottomOf="@+id/gauche"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        tools:ignore="TextContrastCheck" />
 
     <Button
         android:id="@+id/recule"
@@ -58,26 +60,36 @@
         app:layout_constraintEnd_toStartOf="@+id/droite"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <VideoView
+    <ImageView
         android:id="@+id/video"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
         android:layout_marginEnd="16dp"
-        android:contentDescription="Camera sur la voiture."
+        android:layout_marginBottom="16dp"
+        android:adjustViewBounds="false"
+        android:background="#000000"
+        android:contentDescription="@string/video_de_la_voiture"
+        android:cropToPadding="false"
+        android:rotation="90"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/gauche"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toEndOf="@+id/recule"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toEndOf="@+id/avance"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.0" />
+        app:layout_constraintVertical_bias="0.5"
+        tools:ignore="ImageContrastCheck" />
 
     <Spinner
         android:id="@+id/connections"
         android:layout_width="94dp"
         android:layout_height="55dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
         android:spinnerMode="dropdown"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="SpeakableTextPresentCheck" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

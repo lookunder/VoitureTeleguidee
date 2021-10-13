@@ -12,13 +12,14 @@ import java.io.IOException
 import java.io.OutputStream
 import java.util.*
 
-
 class MainActivity : AppCompatActivity() {
     private val mBluetoothAdapter: BluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
     private lateinit var os: OutputStream
     private lateinit var socket: BluetoothSocket
+    private lateinit var videoSocket: BluetoothSocket
     private var minuterie: Long = 0
     private var btd: BluetoothDevice? = null
+    private var filVideo: FilVideo? = null
 
     enum class Commande {
         DROITE, GAUCHE, CENTRE, AVANCE, RECULE, ARRET, ETEINDRE
@@ -35,6 +36,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<ImageButton>(R.id.eteindre).setOnTouchListener(boutonEteindreListener)
 
         var spinner = findViewById<Spinner>(R.id.connections)
+        val video = findViewById<ImageView>(R.id.video)
 
         val bondedDevices = mBluetoothAdapter.bondedDevices
 
@@ -42,15 +44,11 @@ class MainActivity : AppCompatActivity() {
         val adapter: ArrayAdapter<CharSequence> = ArrayAdapter<CharSequence>(this, android.R.layout.simple_spinner_item, choices)
         // Specify the layout to use when the list of choices appears
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-
         // Set the adapter to th spinner
         spinner.setAdapter(adapter);
 
-        //spinner.adapter
-
         spinner?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
             override fun onNothingSelected(parent: AdapterView<*>?) {
-
             }
 
             override fun onItemSelected(
@@ -64,15 +62,25 @@ class MainActivity : AppCompatActivity() {
                 socket = btd!!.createInsecureRfcommSocketToServiceRecord(UUID.fromString("94f39d29-7d6d-437d-973b-fba39e49d4ee"))
                 BluetoothAdapter.getDefaultAdapter().cancelDiscovery()
 
-                while( !socket.isConnected ) {
                     try {
                         socket.connect()
                     } catch (ex: IOException) {
                         Thread.sleep(1_000)
                     }
-                }
 
                 os = socket.outputStream
+
+                videoSocket = btd!!.createInsecureRfcommSocketToServiceRecord( UUID.fromString("94f39d29-7d6d-437d-973b-fba39e49d4ef"))
+                BluetoothAdapter.getDefaultAdapter().cancelDiscovery()
+
+                    try {
+                        videoSocket.connect()
+                    } catch (ex: IOException) {
+                        Thread.sleep(1_000)
+                    }
+
+                filVideo = FilVideo(videoSocket, video, this@MainActivity)
+                filVideo?.start()
             }
         }
     }
@@ -90,6 +98,20 @@ class MainActivity : AppCompatActivity() {
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) hideSystemUI()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if( filVideo!=null) {
+            filVideo?.etat = true;
+            filVideo?.start()
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        if( filVideo!=null)
+            filVideo?.etat = false;
     }
 
     private fun hideSystemUI() {
@@ -154,7 +176,7 @@ class MainActivity : AppCompatActivity() {
     private val boutonEteindreListener = View.OnTouchListener { _, motionEvent ->
         when (motionEvent.action) {
             MotionEvent.ACTION_DOWN -> minuterie = System.nanoTime()
-            MotionEvent.ACTION_UP -> if (System.nanoTime() - minuterie > 3_000_000_000) os?.write(
+            MotionEvent.ACTION_UP -> if( System.nanoTime() - minuterie > 3_000_000_000) os?.write(
                 Commande.ETEINDRE.ordinal
             )
             else -> {}

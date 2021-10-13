@@ -4,4 +4,6 @@
     <string name="gauche">G</string>
     <string name="avance">H</string>
     <string name="recule">B</string>
+    <string name="boutton_pour_teindre_le_v_hicule">Boutton pour éteindre le véhicule</string>
+    <string name="video_de_la_voiture">Video de la voiture</string>
 </resources>
