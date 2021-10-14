@@ -46,11 +46,12 @@ def fil_video():
 
                     while rval:
                         rval, frame = vc.read()
-                        resized_image = cv2.resize(frame, (64, 48), interpolation=cv2.INTER_CUBIC)
-                        #start_time = time.time()
+                        frame = cv2.resize(frame, (160, 120), interpolation=cv2.INTER_CUBIC)
+                        frame = cv2.imencode(".jpg", frame)[1]
+                        connection.send(len(frame).to_bytes(4,'big', signed=False))
                         connection.settimeout(5)
-                        ret = connection.send(resized_image)
-                        client_sock.recv(4)
+                        connection.send(frame)
+                        connection.recv(4)
                         #elapsed_time = time.time() - start_time
                         #print("Video envoyee: "+str(ret)+" bytes en "+str(elapsed_time)+" secondes.")
 
