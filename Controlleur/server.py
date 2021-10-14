@@ -50,6 +50,7 @@ def fil_video():
                         #start_time = time.time()
                         connection.settimeout(5)
                         ret = connection.send(resized_image)
+                        client_sock.recv(4)
                         #elapsed_time = time.time() - start_time
                         #print("Video envoyee: "+str(ret)+" bytes en "+str(elapsed_time)+" secondes.")
 
@@ -88,38 +89,37 @@ def fil_commandes():
             connection, client_info = server_sock.accept()
             print("Connection pour commande de ", client_info)
 
-            try:
-                while True:
-                    data = connection.recv(1024)
-                    if not data:
-                        break
+            while True:
+                data = connection.recv(1024)
+                if not data:
+                    break
 
-                    else:
-                        print("Recu : ", data)
+                else:
+                    print("Recu : ", data)
 
-                        if data == b'\x00': 
-                                kit.motor2.throttle = 1.0
-                        elif data == b'\x01': 
-                                kit.motor2.throttle = -1.0
-                        elif data == b'\x02': 
-                                kit.motor2.throttle = None
-                        elif data == b'\x03': 
-                                kit.motor1.throttle = 0.6
-                        elif data == b'\x04': 
-                                kit.motor1.throttle = -0.6
-                        elif data == b'\x05': 
-                                kit.motor1.throttle = None
-                        elif data == b'\x06': 
-                                kit.motor1.throttle = None
-                                kit.motor2.throttle = None
-                                subprocess.call(['poweroff'], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                        elif data == b'\x07':
-                            camera = True
-                        elif data == b'\x08':
-                            camera = False
-                        else: 
-                                kit.motor1.throttle = None
-                                kit.motor2.throttle = None
+                    if data == b'\x00': 
+                            kit.motor2.throttle = 1.0
+                    elif data == b'\x01': 
+                            kit.motor2.throttle = -1.0
+                    elif data == b'\x02': 
+                            kit.motor2.throttle = None
+                    elif data == b'\x03': 
+                            kit.motor1.throttle = 0.6
+                    elif data == b'\x04': 
+                            kit.motor1.throttle = -0.6
+                    elif data == b'\x05': 
+                            kit.motor1.throttle = None
+                    elif data == b'\x06': 
+                            kit.motor1.throttle = None
+                            kit.motor2.throttle = None
+                            subprocess.call(['poweroff'], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    elif data == b'\x07':
+                        camera = True
+                    elif data == b'\x08':
+                        camera = False
+                    else: 
+                            kit.motor1.throttle = None
+                            kit.motor2.throttle = None
 
         except OSError as error:
             print(error)
