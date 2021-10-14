@@ -1,48 +1,47 @@
 package com.cstpierre.telecommande
 
+import android.app.Activity
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
 import android.graphics.Bitmap
-import android.widget.ImageView
-import android.app.Activity
 import android.graphics.BitmapFactory
-import java.lang.Exception
+import android.widget.ImageView
+import java.io.IOException
+import java.util.*
 import kotlin.math.min
 
-class FilVideo(private val socket: BluetoothSocket, private var view: ImageView, private val activity : Activity) : Thread("Video") {
+class FilVideo(
+    private val btd: BluetoothDevice?,
+    private var view: ImageView,
+    private val activity: Activity
+) : Thread("Video") {
 
-    var etat:Boolean = false
+    var etat: Boolean = false
+    lateinit var socket: BluetoothSocket
 
-    // Il faut un format ARGB ou A est xFF dans notre cas
-    private fun byteToInt(bytes: ByteArray, debut:Int, canauxCouleurs:Int): Int {
-
-        var couleur = 0
-        if( canauxCouleurs==1 ) {
-            couleur = bytes[debut].toInt() and 0xff
-        }
-        if( canauxCouleurs==3 ) {
-            couleur = 0xff and 0xff shl 24 or (bytes[debut+2].toInt() and 0xff shl 16) or (bytes[debut+1].toInt() and 0xff shl 8) or (bytes[debut].toInt() and 0xff)
-        }
-
-        return couleur
-    }
-
-    private fun byteToInt2(bytes: ByteArray): Int {
+    private fun byteToInt(bytes: ByteArray): Int {
 
         return (bytes[0].toInt() and 0xff shl 24) or (bytes[1].toInt() and 0xff shl 16) or (bytes[2].toInt() and 0xff shl 8) or (bytes[3].toInt() and 0xff)
     }
 
-    private fun receptionDonnee(image:ByteArray) : Int {
-        var positionDansImage = 0
+    private fun receptionDonnee(): ByteArray {
+
         val inputStream = socket.inputStream
-        positionDansImage = inputStream.read(image, positionDansImage, 4)
-        val streamSize = byteToInt2(image)
-        while( positionDansImage<((streamSize+4)-1) ) {
-            val quantiteALire = min(8192,(streamSize+4)-positionDansImage)
+
+        val buffer = ByteArray(4)
+        inputStream.read(buffer, 0, 4)
+        val streamSize = byteToInt(buffer)
+
+        var positionDansImage = 0
+        val image = ByteArray(streamSize)
+        while (positionDansImage < streamSize) {
+            val quantiteALire = min(8192, streamSize - positionDansImage)
             val quantiteLu = inputStream.read(image, positionDansImage, quantiteALire)
             positionDansImage += quantiteLu
         }
 
-        return streamSize;
+        return image;
     }
 
     //Envoie un message indicant que l'image est reçue.
@@ -51,7 +50,7 @@ class FilVideo(private val socket: BluetoothSocket, private var view: ImageView,
         socket.outputStream.write(1)
     }
 
-    private fun afficherImage(bmp:Bitmap) {
+    private fun afficherImage(bmp: Bitmap) {
         activity.runOnUiThread {
             // some code that needs to be ran in UI thread
             view.setImageBitmap(bmp)
@@ -61,18 +60,29 @@ class FilVideo(private val socket: BluetoothSocket, private var view: ImageView,
     override fun run() {
         etat = true
 
-        val image = ByteArray(640*480*3)
+        val uuid = UUID.fromString("94f39d29-7d6d-437d-973b-fba39e49d4ef")
+        socket = btd!!.createInsecureRfcommSocketToServiceRecord(uuid)
+        BluetoothAdapter.getDefaultAdapter().cancelDiscovery()
 
-        while(true) {
-            if(!etat)
+        try {
+            socket.connect()
+        } catch (ex: IOException) {
+            //TODO: Mettre un message d'erreur
+            return
+        }
+
+        while (true) {
+            if (!etat) {
+                socket.close()
                 break
+            }
 
-            try{
-                val streamSize = receptionDonnee(image)
+            try {
+                val imageJpg = receptionDonnee()
                 confirmation()
-                val toto = BitmapFactory.decodeByteArray(image,4, streamSize)
-                afficherImage(toto)
-            }catch (ex: Exception) {
+                val image = BitmapFactory.decodeByteArray(imageJpg, 0, imageJpg.size)
+                afficherImage(image)
+            } catch (ex: Exception) {
                 sleep(1_000)
             }
         }

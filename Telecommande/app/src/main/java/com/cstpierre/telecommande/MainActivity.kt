@@ -18,7 +18,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var socket: BluetoothSocket
     private lateinit var videoSocket: BluetoothSocket
     private var minuterie: Long = 0
-    private var btd: BluetoothDevice? = null
+    private var bluetoothDevice: BluetoothDevice? = null
     private var filVideo: FilVideo? = null
 
     enum class Commande {
@@ -40,7 +40,7 @@ class MainActivity : AppCompatActivity() {
 
         val bondedDevices = mBluetoothAdapter.bondedDevices
 
-        val choices = bondedDevices.map { btd -> btd.name  }
+        val choices = bondedDevices.map { bondedDevice -> bondedDevice.name  }
         val adapter: ArrayAdapter<CharSequence> = ArrayAdapter<CharSequence>(this, android.R.layout.simple_spinner_item, choices)
         // Specify the layout to use when the list of choices appears
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -57,29 +57,26 @@ class MainActivity : AppCompatActivity() {
                 position: Int,
                 id: Long
             ) {
-                btd = bondedDevices.find { btd -> btd.name == spinner.selectedItem }
+                bluetoothDevice = bondedDevices.find { btd -> btd.name == spinner.selectedItem }
 
-                socket = btd!!.createInsecureRfcommSocketToServiceRecord(UUID.fromString("94f39d29-7d6d-437d-973b-fba39e49d4ee"))
+                if( filVideo!=null) {
+                    filVideo?.etat = false;
+                    socket.close()
+                }
+
+                val uuid= UUID.fromString("94f39d29-7d6d-437d-973b-fba39e49d4ee")
+                socket = bluetoothDevice!!.createInsecureRfcommSocketToServiceRecord(uuid)
                 BluetoothAdapter.getDefaultAdapter().cancelDiscovery()
 
-                    try {
-                        socket.connect()
-                    } catch (ex: IOException) {
-                        Thread.sleep(1_000)
-                    }
+                try {
+                    socket.connect()
+                } catch (ex: IOException) {
+                    return
+                }
 
                 os = socket.outputStream
 
-                videoSocket = btd!!.createInsecureRfcommSocketToServiceRecord( UUID.fromString("94f39d29-7d6d-437d-973b-fba39e49d4ef"))
-                BluetoothAdapter.getDefaultAdapter().cancelDiscovery()
-
-                    try {
-                        videoSocket.connect()
-                    } catch (ex: IOException) {
-                        Thread.sleep(1_000)
-                    }
-
-                filVideo = FilVideo(videoSocket, video, this@MainActivity)
+                filVideo = FilVideo(bluetoothDevice, video, this@MainActivity)
                 filVideo?.start()
             }
         }
@@ -93,6 +90,7 @@ class MainActivity : AppCompatActivity() {
         os?.flush()
         os?.close()
         socket?.close()
+        filVideo?.etat = false;
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -105,13 +103,30 @@ class MainActivity : AppCompatActivity() {
         if( filVideo!=null) {
             filVideo?.etat = true;
             filVideo?.start()
+
+            //Redémare on resume
+            val uuid= UUID.fromString("94f39d29-7d6d-437d-973b-fba39e49d4ee")
+            socket = bluetoothDevice!!.createInsecureRfcommSocketToServiceRecord(uuid)
+            BluetoothAdapter.getDefaultAdapter().cancelDiscovery()
+
+            try {
+                socket.connect()
+            } catch (ex: IOException) {
+                return
+                //TODO: Metter un message demandant de se reconnecter
+            }
+
+            os = socket.outputStream
         }
     }
 
     override fun onPause() {
         super.onPause()
-        if( filVideo!=null)
+        if( filVideo!=null) {
             filVideo?.etat = false;
+            Thread.sleep(1)
+            socket.close()
+        }
     }
 
     private fun hideSystemUI() {

@@ -26,7 +26,7 @@ def fil_video():
 
     
         try:
-            print("En attente d'une connection sur le canal RFCOMM", port)
+            print("En attente d'une connection video sur le canal RFCOMM", port)
 
             connection, client_info = server_sock.accept()
             print("Connection pour video de ", client_info)
@@ -55,12 +55,10 @@ def fil_video():
                         #elapsed_time = time.time() - start_time
                         #print("Video envoyee: "+str(ret)+" bytes en "+str(elapsed_time)+" secondes.")
 
-        except OSError as error:
-            print(error)
-                
-        except bluetooth.btcommon.BluetoothError as error:
+        except Exception as error:
             print(error)
 
+        vc.release()
         connection.close()
         server_sock.close()
 
@@ -85,7 +83,7 @@ def fil_commandes():
 
     
         try:
-            print("En attente d'une connection sur le canal RFCOMM", port)
+            print("En attente d'une connection commande sur le canal RFCOMM", port)
 
             connection, client_info = server_sock.accept()
             print("Connection pour commande de ", client_info)
@@ -122,12 +120,11 @@ def fil_commandes():
                             kit.motor1.throttle = None
                             kit.motor2.throttle = None
 
-        except OSError as error:
-            print(error)
-
-        except bluetooth.btcommon.BluetoothError as error:
+        except Exception as error:
             print(error)
             
+        kit.motor1.throttle = None
+        kit.motor2.throttle = None
         connection.close()
         server_sock.close()
 
